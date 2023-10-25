@@ -5,7 +5,7 @@ build-depends: base, ansi-terminal
 {-# LANGUAGE LambdaCase #-}
 module Main where
 
-import Data.Foldable (traverse_, sequenceA_)
+import Data.Foldable (traverse_, sequenceA_, fold)
 import System.Console.ANSI
     ( clearScreen
     , setSGR
@@ -67,7 +67,7 @@ initialize :: IO ()
 initialize = do
     setSGR defaultSGR
 
-    traverse_ (flip hSetBuffering NoBuffering) [stdin, stdout]
+    mapM_ (flip hSetBuffering NoBuffering) [stdin, stdout]
 
     hSetEcho stdin False
 
@@ -87,32 +87,30 @@ gameLoop hanoi = do
     
     getPress >>= evaluateInput
   where
-    showIntro = traverse_ putStrLn intro
-    showInstructions = traverse_ putStrLn instructions
+    showIntro = mapM_ putStrLn intro
+    showInstructions = mapM_ putStrLn instructions
 
     evaluateInput = undefined
 
-intro :: [String]
-intro =
-    [ "The Tower of Hanoi, adapted from Al Sweigart's original"
-    , "by Liam Zhu liam.zhu@protonmail.com"
-    , ""
-    , "Move the tower of disks, one disk at a time, to another tower."
-    , "Larger disks cannot rest on top of a smaller disk."
-    , ""
-    , "More info at https://en.wikipedia.org/wiki/Tower_of_Hanoi"
-    , ""
-    ]
+    intro =
+        [ "The Tower of Hanoi, adapted from Al Sweigart's original"
+        , "by Liam Zhu liam.zhu@protonmail.com"
+        , ""
+        , "Move the tower of disks, one disk at a time, to another tower."
+        , "Larger disks cannot rest on top of a smaller disk."
+        , ""
+        , "More info at https://en.wikipedia.org/wiki/Tower_of_Hanoi"
+        , ""
+        ]
 
-instructions :: [String]
-instructions =
-    [ "Press the left or right arrow key to move the cursor."
-    , ""
-    , "Press space to select a peg and, on the same peg,"
-    , "unselect, or on a different peg, to attempt to move"
-    , "the top disk from the selected peg to the new peg."
-    , ""
-    ]
+    instructions =
+        [ "Press the left or right arrow key to move the cursor."
+        , ""
+        , "Press space to select a peg and, on the same peg,"
+        , "unselect, or on a different peg, to attempt to move"
+        , "the top disk from the selected peg to the new peg."
+        , ""
+        ]
 
 data ColoredChar = MkCC [SGR] !Char
 
@@ -123,7 +121,7 @@ putColoredChar (MkCC sgr char) = do
     setSGR defaultSGR
 
 putHanoi :: Hanoi -> IO ()
-putHanoi =  (traverse_ . traverse) putColoredChar
+putHanoi =  (traverse_ . traverse_) putColoredChar
     . intersperse [MkCC [] '\n']
     . mkHanoiSpec
 

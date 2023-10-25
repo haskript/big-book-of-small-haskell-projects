@@ -45,7 +45,7 @@ randomWords@[ objectPronouns, possessivePronouns, personalPronouns
 
 selectors :: [RndState String]
 selectors@[ objectPronoun, possessivePronoun, personalPronoun, state
-          , noun, place, aWhen, website ] = select <$> randomWord
+          , noun, place, aWhen, website ] = select <$> randomWords
 
 headlines :: [RndState String]
 headlines = fmap fold <$>
