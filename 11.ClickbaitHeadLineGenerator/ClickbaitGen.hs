@@ -75,11 +75,11 @@ headlines = fmap fold <$>
 
 select :: [a] -> RndState a
 select ls =
-    get >>= fmap (ls !!) . uncurry (<$) . fmap put . randomR (0, length ls - 1)
+    get >>= fmap (ls !!) . uncurry (<$) . fmap (put $!) . randomR (0, length ls - 1)
 
 selectNumber :: Int -> Int -> RndState Int
 selectNumber lower upper = get
-    >>= uncurry (<$) . fmap put . randomR (lower, upper)
+    >>= uncurry (<$) . fmap (put $!) . randomR (lower, upper)
 
 main :: IO ()
 main = mapM_ putStrLn intro >> inputLoop
