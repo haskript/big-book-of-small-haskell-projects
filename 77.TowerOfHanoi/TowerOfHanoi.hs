@@ -1,6 +1,6 @@
 {- cabal:
 default-language: GHC2021
-build-depends: base, ansi-terminal, lens
+build-depends: base, ansi-terminal, lens, vector
 -}
 {-# LANGUAGE LambdaCase #-}
 module Main where
@@ -29,8 +29,13 @@ import Data.List (intersperse, uncons)
 
 import Data.Function ((&))
 
+import Control.Monad (replicateM)
+
 import Control.Lens.Traversal
 import Control.Lens.Operators ((%~))
+
+import Data.Vector qualified as V
+import Data.Vector (Vector)
 
 data Hanoi
     = MkHanoi
@@ -68,7 +73,7 @@ hanoiDefault = MkHanoi defaultStack [] [] Nothing PegTwo
 main :: IO ()
 main = initialize >> gameLoop hanoiDefault >> exit
   where
-    exit = setSGR [Reset]
+    exit = setSGR [Reset] >> putStrLn ""
 
     debugHanoi = hanoiDefault { thirdPeg = [ One .. Nine ] }
 
@@ -79,6 +84,7 @@ initialize = do
     mapM_ (flip hSetBuffering NoBuffering) [stdin, stdout]
 
     hSetEcho stdin False
+    hSetBuffering stdout LineBuffering
 
 defaultSGR :: [SGR]
 defaultSGR = 
@@ -113,6 +119,9 @@ gameLoop hanoi
     
         getPress >>= evaluateInput
   where
+    checkVictory :: Bool
+    checkVictory = thirdPeg hanoi == [One .. Nine]
+
     showIntro :: IO ()
     showIntro = mapM_ putStrLn intro
 
@@ -147,23 +156,27 @@ gameLoop hanoi
     evaluateInput :: String -> IO ()
     evaluateInput = \case
         "q" -> pure ()
-	"\ESC[D"
+	"\ESC[D" -> leftPress
+        "\ESC[C" -> rightPress
+	" " -> select
+	_ -> gameLoop hanoi
+      where
+        leftPress
 	    | focusState hanoi == PegOne
-	        -> gameLoop $ hanoi {focusState = PegThree}
-	    | otherwise -> gameLoop
+	        = gameLoop $ hanoi {focusState = PegThree}
+	    | otherwise = gameLoop
 	        $ hanoi {focusState = pred $ focusState hanoi}
-        "\ESC[C"
+        rightPress
 	    | focusState hanoi == PegThree
-	        -> gameLoop $ hanoi {focusState = PegOne}
-	    | otherwise -> gameLoop
+	        = gameLoop $ hanoi {focusState = PegOne}
+	    | otherwise = gameLoop
 	        $ hanoi {focusState = succ $ focusState hanoi}
-	" " -> case selectState hanoi of
+	select = case selectState hanoi of
 	    Nothing -> gameLoop
 	        $ hanoi {selectState = Just $ focusState hanoi}
 	    Just selectedPeg
 	        | selectedPeg == focusState hanoi -> unselect
 		| otherwise -> checkMove selectedPeg
-        _ -> gameLoop hanoi
 
     unselect :: IO ()
     unselect = gameLoop $ hanoi { selectState = Nothing }
@@ -207,9 +220,6 @@ gameLoop hanoi
 	                { thirdPeg = newSource, firstPeg = newTarget }
 	            (PegThree, PegTwo) -> hanoi
 	                { thirdPeg = newSource, secondPeg = newTarget }
-
-    checkVictory :: Bool
-    checkVictory = thirdPeg hanoi == [One .. Nine]
 
 data ColoredChar = MkCC [SGR] !Char deriving (Eq, Show)
 
@@ -267,6 +277,8 @@ mkHanoiSpec hanoi = appendFocus . appendSelect
 	          , SetColor Background Vivid Yellow ] 'X'
 	else MkCC [ SetColor Background Dull Green
 	          , SetColor Background Dull Green ] '%'
+
+type DList a  = [a] -> [a]
 
 composedGrids :: Hanoi -> [[ColoredChar]]
 composedGrids hanoi = (plainLine : appendTags) ++ [plainLine]
