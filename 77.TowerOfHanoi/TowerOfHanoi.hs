@@ -22,6 +22,7 @@ import System.IO
     , hSetEcho
     , hSetBuffering
     , BufferMode (..)
+    , hGetBuffering
     )
 
 import Data.Bool (bool)
@@ -80,10 +81,11 @@ main = initialize >> gameLoop hanoiDefault >> exit
 initialize :: IO ()
 initialize = do
     setSGR defaultSGR
-
-    mapM_ (flip hSetBuffering NoBuffering) [stdin, stdout]
+ 
+    hSetBuffering stdin NoBuffering
 
     hSetEcho stdin False
+
     hSetBuffering stdout LineBuffering
 
 defaultSGR :: [SGR]
@@ -277,8 +279,6 @@ mkHanoiSpec hanoi = appendFocus . appendSelect
 	          , SetColor Background Vivid Yellow ] 'X'
 	else MkCC [ SetColor Background Dull Green
 	          , SetColor Background Dull Green ] '%'
-
-type DList a  = [a] -> [a]
 
 composedGrids :: Hanoi -> [[ColoredChar]]
 composedGrids hanoi = (plainLine : appendTags) ++ [plainLine]
