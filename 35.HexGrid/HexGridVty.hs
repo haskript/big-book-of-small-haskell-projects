@@ -61,10 +61,9 @@ mainProg = progLoop =<< hoist generalize pictureTemplate
         (_,_,vtyHandle) <- ask
         liftIO $ update vtyHandle picture
         liftIO (nextEvent vtyHandle) >>= \case
-           EvKey key _
-               | key `elem` arrowKeys ->
+	   EvKey (KChar 'q') _ -> liftIO $ shutdown vtyHandle
+           EvKey key _ ->
                    progLoop =<< hoist generalize (updatePicture key picture)
-           EvKey (KChar 'q') _ -> liftIO $ shutdown vtyHandle
            _ -> progLoop picture
 
 arrowKeys :: [Key]
